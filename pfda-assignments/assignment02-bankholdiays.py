@@ -12,8 +12,8 @@ import pandas as pd
 
 # This is split into Part 1 and part 2 - Part 1 is to read the json file and print out the bank holidays for Northern Ireland. - outputs are at the end of the program in note form.
 
-url =" https://www.gov.uk/bank-holidays.json"
-response = requests.get(url)
+url =" https://www.gov.uk/bank-holidays.json"   # url for the json file - https://www.w3schools.com/Python/ref_module_json.asp
+response = requests.get(url)                     # code for initial json acquisition  - https://vlegalwaymayo.atu.ie/pluginfile.php/1590492/mod_url/intro/Lab%2001%20Datarepresentation.pdf?time=1759329869806
 data = response.json()
 # print(data)                                       # to check it works
 
@@ -45,7 +45,7 @@ print(ni_holidays2026_df)                           # print out the bank holiday
 # Output the number of bank holidays unique to Northern Ireland in 2026.
 # Use a function to define this - Holidays unique to Northern Ireland are those that do not appear in the bank holidays for England and Wales, Scotland or UK in 2026.
 # For the holiday and date, see https://www.gov.uk/bank-holidays
-def unique_ni_holidays_2026():
+def unique_ni_holidays_2026():  # Based on defining custom functions https://stackoverflow.com/questions/40353519/how-to-apply-custom-function-to-pandas-data-frame-for-each-row and https://github.com/KaiiMenai/pands-weekly-tasks/blob/main/squareroot.py
     ni_holidays2026 = set(ni_holidays2026_df['title'])  # Get the set of Northern Ireland holidays in 2026.
     eng_wales_holidays2026 = set(final[(final['Country'] == 'england-and-wales') & (final['date'].dt.year == 2026)]['title']) # Get the holidays for England and Wales in 2026.
     scotland_holidays2026 = set(final[(final['Country'] == 'scotland') & (final['date'].dt.year == 2026)]['title']) # Get the holidays for Scotland in 2026.
@@ -80,4 +80,4 @@ print("Unique bank holidays by name in Northern Ireland in 2026:", unique_holida
 # Number of bank holidays unique to Northern Ireland in 2026: 2
 # Unique bank holidays by name in Northern Ireland in 2026: {'Battle of the Boyne (Orangemen’s Day)', 'St Patrick’s Day'}
 
-## END OF PROGRAM
+## END
