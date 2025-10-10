@@ -2,6 +2,8 @@
 # This program will read bank holidays from a json file and print them out - specifically for Northern Ireland.
 # The second part of the assignment is to write a function that will return the number of bank holidays unique to Northern Ireland.
 
+# Author: Kyra Menai Hamilton
+
 # The json is available from https://www.gov.uk/bank-holidays.json
 
 import json
