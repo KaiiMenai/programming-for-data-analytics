@@ -19,6 +19,16 @@ from sklearn.metrics import mean_squared_error, r2_score
 from scipy import stats
 import os
 
+# Set global font sizes for better readability
+plt.rcParams.update({
+    'font.size': 14,
+    'axes.labelsize': 16,
+    'axes.titlesize': 18,
+    'legend.fontsize': 12,
+    'xtick.labelsize': 12,
+    'ytick.labelsize': 12
+})
+
 # Load the data from the CSO API and save the dataset as a CSV file
 url = "https://ws.cso.ie/public/api.jsonrpc?data=%7B%22jsonrpc%22:%222.0%22,%22method%22:%22PxStat.Data.Cube_API.ReadDataset%22,%22params%22:%7B%22class%22:%22query%22,%22id%22:%5B%5D,%22dimension%22:%7B%7D,%22extension%22:%7B%22pivot%22:null,%22codes%22:false,%22language%22:%7B%22code%22:%22en%22%7D,%22format%22:%7B%22type%22:%22CSV%22,%22version%22:%221.0%22%7D,%22matrix%22:%22AFA01%22%7D,%22version%22:%222.0%22%7D%7D"
 response = requests.get(url)
@@ -93,6 +103,7 @@ plt.xlabel('Year')
 plt.ylabel('Value')
 plt.legend(title='Species', bbox_to_anchor=(1.05, 1), loc='upper left')
 plt.grid()
+plt.tight_layout()
 plt.show()
 # Save the plot
 species_trends_path = os.path.join(outputs_dir, 'species_trends_ireland.png')
@@ -128,15 +139,29 @@ plt.xlabel('Year')
 plt.ylabel('Value')
 plt.legend(title='Forest Owner', bbox_to_anchor=(1.05, 1), loc='upper left')
 plt.grid()
+plt.tight_layout()
 plt.show()
 # Save the plot
 forest_owner_trends_path = os.path.join(outputs_dir, 'forest_owner_trends_ireland.png')
 plt.savefig(forest_owner_trends_path)   
 
 # Now I want to analyse the data for specific counties. I want to look at the top 5 counties with the highest total value over the years.
-county_totals = data.groupby('County')['VALUE'].sum().reset_index()
+county_totals = data[data['County'] != 'Ireland'].groupby('County')['VALUE'].sum().reset_index()
 top_5_counties = county_totals.nlargest(5, 'VALUE')['County'].tolist()
 print("Top 5 Counties with highest total value over the years:", top_5_counties)
+
+# Overlay plots for value over years for top 5 counties
+top_5_data = data[data['County'].isin(top_5_counties)]
+plt.figure(figsize=(12, 6))
+sns.lineplot(x='Year', y='VALUE', hue='County', data=top_5_data, marker='o')
+plt.title('Afforestation Value over Years for Top 5 Counties')
+plt.xlabel('Year')
+plt.ylabel('Value')
+plt.grid()
+plt.show()
+# Save the plot
+overlay_plot_path = os.path.join(outputs_dir, 'value_over_years_top5_counties.png')
+plt.savefig(overlay_plot_path)
 
 for county in top_5_counties:
     county_data = data[data['County'] == county]
@@ -159,6 +184,7 @@ for county in top_5_counties:
     plt.ylabel('Value')
     plt.legend(title='Species', bbox_to_anchor=(1.05, 1), loc='upper left')
     plt.grid()
+    plt.tight_layout()
     plt.show()
     # Save the plot
     species_trends_county_path = os.path.join(outputs_dir, f'species_trends_{county.replace(" ", "_").lower()}.png')
@@ -172,10 +198,28 @@ for county in top_5_counties:
     plt.ylabel('Value')
     plt.legend(title='Forest Owner', bbox_to_anchor=(1.05, 1), loc='upper left')
     plt.grid()
+    plt.tight_layout()
     plt.show()
     # Save the plot
     forest_owner_trends_county_path = os.path.join(outputs_dir, f'forest_owner_trends_{county.replace(" ", "_").lower()}.png')
     plt.savefig(forest_owner_trends_county_path)
+
+# Plot mean VALUE over years for all counties (excluding Ireland)
+counties_data = data[data['County'] != 'Ireland']
+mean_value_per_year_county = counties_data.groupby(['Year', 'County'])['VALUE'].mean().reset_index()
+plt.figure(figsize=(30, 15))
+sns.lineplot(x='Year', y='VALUE', hue='County', data=mean_value_per_year_county, marker='o')
+plt.title('Mean Afforestation Value over Years for All Counties')
+plt.xlabel('Year')
+plt.ylabel('Mean Value')
+plt.legend(title='County', bbox_to_anchor=(1.05, 1), loc='upper left')
+plt.grid()
+plt.tight_layout()
+plt.show()
+# Save the plot
+all_counties_plot_path = os.path.join(outputs_dir, 'mean_value_over_years_all_counties.png')
+plt.savefig(all_counties_plot_path)
+
 plt.figure(figsize=(10, 6))
 sns.histplot(data['VALUE'], bins=30, kde=True)
 plt.title('Distribution of Values')
@@ -229,4 +273,35 @@ plt.show()
 # Save the plot
 hist_path = os.path.join(outputs_dir, 'value_distribution.png')
 plt.savefig(hist_path)
+
+# Visualise forest owner trends vs species trends for Ireland.
+ireland_data = data[data['County'] == 'Ireland']
+forest_owner_trends_ireland = ireland_data.groupby(['Year', 'Forest Owner'])['VALUE'].sum().reset_index()
+species_trends_ireland = ireland_data.groupby(['Year', 'Species'])['VALUE'].sum().reset_index()
+
+plt.figure(figsize=(20, 12))
+sns.lineplot(x='Year', y='VALUE', hue='Forest Owner', data=forest_owner_trends_ireland, marker='o')
+plt.title('Forest Owner Trends over Years for Ireland')
+plt.xlabel('Year')
+plt.ylabel('Value')
+plt.legend(title='Forest Owner', bbox_to_anchor=(1.05, 1), loc='upper left')
+plt.grid()
+plt.tight_layout()
+plt.show()
+# Save the plot
+forest_owner_trends_ireland_path = os.path.join(outputs_dir, 'forest_owner_trends_ireland.png')
+plt.savefig(forest_owner_trends_ireland_path)
+
+plt.figure(figsize=(20, 12))
+sns.lineplot(x='Year', y='VALUE', hue='Species', data=species_trends_ireland, marker='o')
+plt.title('Species Trends over Years for Ireland')
+plt.xlabel('Year')
+plt.ylabel('Value')
+plt.legend(title='Species', bbox_to_anchor=(1.05, 1), loc='upper left')
+plt.grid()
+plt.tight_layout()
+plt.show()
+# Save the plot
+species_trends_ireland_path = os.path.join(outputs_dir, 'species_trends_ireland.png')
+plt.savefig(species_trends_ireland_path)
 
