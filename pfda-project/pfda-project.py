@@ -44,6 +44,10 @@ data.to_csv(csv_path, index=False)
 outputs_dir = os.path.join(script_dir, 'outputs')
 os.makedirs(outputs_dir, exist_ok=True)
 
+# Create a subfolder for basic statistical analysis
+basic_analysis_dir = os.path.join(script_dir, 'basic_statistical_analysis')
+os.makedirs(basic_analysis_dir, exist_ok=True)
+
 # Read the dataset
 data = pd.read_csv(csv_path)
 # Display the first few rows of the dataset
@@ -61,16 +65,80 @@ print(data.isnull().sum())
 print(data.dtypes)
 
 # For now I think the data types are fine, but if needed we can convert them later.
+
 # Basic Data Exploration
 # Summary Statistics for value vs county vs year
 summary_stats = data.groupby(['County', 'Year'])['VALUE'].describe()
 print(summary_stats)
 # Save summary statistics to a CSV file
-summary_stats_path = os.path.join(outputs_dir, 'summary_statistics.csv')
+summary_stats_path = os.path.join(basic_analysis_dir, 'summary_statistics.csv')
 summary_stats.to_csv(summary_stats_path)
 
+# Look at interesting statistics findings for the counties and write output to a markdown (.md) file.
+with open(os.path.join(basic_analysis_dir, "basic_analysis.md"), "w") as file:
+    print("# Basic Statistical Analysis on Ireland Afforestation Data", file=file)
+    print("\n***Author: Kyra Menai Hamilton***", file=file)
+    print("\n## Summary", file=file)
+    summary_text = (
+        print("\n## Interesting Statistics Findings for Counties \n", file=file)
+    )
+    print("\n1. Average VALUE per county (excluding Ireland for county-specific analysis)", file=file)
+    counties_data = data[data['County'] != 'Ireland']
+    avg_value_per_county = counties_data.groupby('County')['VALUE'].mean().sort_values(ascending=False)
+    print(avg_value_per_county.head(10).to_markdown(), file=file)
+    avg_value_path = os.path.join(basic_analysis_dir, 'avg_value_per_county.csv')
+    avg_value_per_county.to_csv(avg_value_path)
 
-# Visualize distributions of key variables
+    print("\n### 2. Total VALUE per County", file=file)
+    print("Total afforestation value summed across all years.", file=file)
+    total_value_per_county = counties_data.groupby('County')['VALUE'].sum().sort_values(ascending=False)
+    print(total_value_per_county.head(10).to_markdown(), file=file)
+    total_value_path = os.path.join(basic_analysis_dir, 'total_value_per_county.csv')
+    total_value_per_county.to_csv(total_value_path)
+
+    print("\n### 3. Coefficient of Variation per County", file=file)
+    print("Measures relative variability (std/mean); higher values indicate more year-to-year inconsistency.", file=file)
+    cv_per_county = (counties_data.groupby('County')['VALUE'].std() / counties_data.groupby('County')['VALUE'].mean()).sort_values(ascending=False)
+    print(cv_per_county.head(10).to_markdown(), file=file)
+    cv_path = os.path.join(basic_analysis_dir, 'cv_per_county.csv')
+    cv_per_county.to_csv(cv_path)
+
+    print("\n### 4. Maximum VALUE per County", file=file)
+    print("Peak afforestation value in any single year.", file=file)
+    max_value_per_county = counties_data.groupby('County')['VALUE'].max().sort_values(ascending=False)
+    print(max_value_per_county.head(10).to_markdown(), file=file)
+    max_value_path = os.path.join(basic_analysis_dir, 'max_value_per_county.csv')
+    max_value_per_county.to_csv(max_value_path)
+
+    print("\n### 5. Number of Years with Data per County", file=file)
+    print("Indicates data completeness for each county.", file=file)
+    years_per_county = counties_data.groupby('County')['Year'].nunique().sort_values(ascending=False)
+    print(years_per_county.head(10).to_markdown(), file=file)
+    years_path = os.path.join(basic_analysis_dir, 'years_per_county.csv')
+    years_per_county.to_csv(years_path)
+
+    print("\n### 6. Growth Rate per County", file=file)
+    print("Simplified growth rate: (last year's VALUE - first year's VALUE) / first year's VALUE.", file=file)
+    def growth_rate(group):
+        if len(group) < 2:
+            return np.nan
+        first = group['VALUE'].iloc[0]
+        last = group['VALUE'].iloc[-1]
+        return (last - first) / first if first != 0 else np.nan
+    growth_per_county = counties_data.sort_values('Year').groupby('County').apply(growth_rate).sort_values(ascending=False)
+    print(growth_per_county.head(10).to_markdown(), file=file)
+    growth_path = os.path.join(basic_analysis_dir, 'growth_rate_per_county.csv')
+    growth_per_county.to_csv(growth_path)
+
+    print("\n## Data Sources and Outputs", file=file)
+    print("- Raw data: pfda_data.csv", file=file)
+    print("- Summary statistics: summary_statistics.csv", file=file)
+    print("- All statistical CSVs are in the basic_statistical_analysis/ folder.", file=file)
+    print("- Plots are saved in outputs/ as PNG files.", file=file)
+
+print("Interesting findings written to basic_statistical_analysis/basic_analysis.md") # Ref of how to do all this is from my pands-project: https://github.com/KaiiMenai/pands-project/blob/main/analysis.py
+
+# Visualise distributions of key variables
 plt.figure(figsize=(10, 6))
 sns.histplot(data['VALUE'], bins=30, kde=True)
 plt.title('Distribution of Values')
@@ -94,7 +162,7 @@ plt.show()
 lineplot_path = os.path.join(outputs_dir, 'value_over_years_ireland.png')
 plt.savefig(lineplot_path)
 
-# Analyse data over the years for Ireland as a whole. Look at species trends
+# Analyse data over the years for Ireland as a whole. Look at species trends.
 species_trends = ireland_data.groupby(['Year', 'Species'])['VALUE'].sum().reset_index()
 plt.figure(figsize=(35, 15))
 sns.lineplot(x='Year', y='VALUE', hue='Species', data=species_trends, marker='o')
@@ -220,15 +288,6 @@ plt.show()
 all_counties_plot_path = os.path.join(outputs_dir, 'mean_value_over_years_all_counties.png')
 plt.savefig(all_counties_plot_path)
 
-plt.figure(figsize=(10, 6))
-sns.histplot(data['VALUE'], bins=30, kde=True)
-plt.title('Distribution of Values')
-plt.xlabel('Value')
-plt.ylabel('Frequency')
-plt.show()
-# Save the plot
-hist_path = os.path.join(outputs_dir, 'value_distribution.png')
-plt.savefig(hist_path)  
 # Visualise the Value over the years for Ireland as a whole
 ireland_data = data[data['County'] == 'Ireland']
 plt.figure(figsize=(12, 6))
@@ -264,15 +323,6 @@ plt.show()
 # Save the plot
 boxplot_path = os.path.join(outputs_dir, 'afforestation_boxplot.png')
 plt.savefig(boxplot_path)
-plt.figure(figsize=(10, 6))
-sns.histplot(data['VALUE'], bins=30, kde=True)
-plt.title('Distribution of Values')
-plt.xlabel('Value')
-plt.ylabel('Frequency')
-plt.show()
-# Save the plot
-hist_path = os.path.join(outputs_dir, 'value_distribution.png')
-plt.savefig(hist_path)
 
 # Visualise forest owner trends vs species trends for Ireland.
 ireland_data = data[data['County'] == 'Ireland']
@@ -305,3 +355,65 @@ plt.show()
 species_trends_ireland_path = os.path.join(outputs_dir, 'species_trends_ireland.png')
 plt.savefig(species_trends_ireland_path)
 
+# Now that I've done some analysis, I want to further explore using a linear regression model and to see if I can predict afforestation values based on year, species, forest owner, and county.
+# Now to prepare the data for modeling.
+model_data = data.copy()
+# Encode categorical variables
+model_data = pd.get_dummies(model_data, columns=['Species', 'Forest Owner', 'County'], drop_first=True)
+# Define features and target variable
+X = model_data.drop(columns=['VALUE', 'Year'])  # Exclude 'Year'
+y = model_data['VALUE']
+# Split the data into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+# Create and train the linear regression model
+model = LinearRegression()
+model.fit(X_train, y_train)
+# Make predictions
+y_pred = model.predict(X_test)
+# Evaluate the model
+mse = mean_squared_error(y_test, y_pred)
+r2 = r2_score(y_test, y_pred)
+print(f"Mean Squared Error: {mse}")
+print(f"R-squared: {r2}")
+# Now to see if the model can predict afforestation values for a specific year, species, forest owner, and county. Given that Ireland is aiming for 8,000 hectares of new afforestation annually by 2030, I will use this as a test case.
+
+# Get unique species and forest owners from the data
+unique_species = data['Species'].unique()
+unique_forest_owners = data['Forest Owner'].unique()
+
+print("\nUnique Species in dataset:")
+print(unique_species)
+print("\nUnique Forest Owners in dataset:")
+print(unique_forest_owners)
+
+# Build test case dynamically from the first species and first forest owner
+test_case = {'Year': 2030}
+
+# Add species columns (set first species to 1, others to 0)
+for species in unique_species:
+    col_name = f'Species_{species}'
+    test_case[col_name] = 1 if species == unique_species[0] else 0
+
+# Add forest owner columns (set first forest owner to 1, others to 0)
+for owner in unique_forest_owners:
+    col_name = f'Forest Owner_{owner}'
+    test_case[col_name] = 1 if owner == unique_forest_owners[0] else 0
+
+# Add county columns (all set to 0 to use the base category)
+unique_counties = data[data['County'] != 'Ireland']['County'].unique()
+for county in unique_counties:
+    col_name = f'County_{county}'
+    test_case[col_name] = 0
+
+# Ensure all model features are in the test case with default values of 0
+for feature in X.columns:
+    if feature not in test_case:
+        test_case[feature] = 0
+
+test_case_df = pd.DataFrame([test_case])
+predicted_value = model.predict(test_case_df)
+print(f"\nPredicted afforestation value for 2030 with {unique_species[0]} by {unique_forest_owners[0]}: {predicted_value[0]:.2f} hectares")
+if predicted_value[0] >= 8000:
+    print("The predicted value meets or exceeds the target of 8000 hectares.")
+else:
+    print("The predicted value is below the target of 8000 hectares.")
