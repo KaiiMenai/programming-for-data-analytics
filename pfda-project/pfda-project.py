@@ -249,44 +249,42 @@ plt.savefig(overlay_plot_path)
 
 for county in top_5_counties:
     county_data = data[data['County'] == county]
-    plt.figure(figsize=(12, 6))
-    sns.lineplot(x='Year', y='VALUE', data=county_data, marker='o')
-    plt.title(f'Value over Years for {county}')
-    plt.xlabel('Year')
-    plt.ylabel('Value')
-    plt.grid()
-    plt.show()
-    # Save the plot
-    county_plot_path = os.path.join(outputs_dir, f'value_over_years_{county.replace(" ", "_").lower()}.png')
-    plt.savefig(county_plot_path)
-    # Further analysis for species trends in the county
+    
+    # Create a combined subplot for the county: 1 row, 3 columns
+    fig, axes = plt.subplots(1, 3, figsize=(25, 6))
+    fig.suptitle(f'Afforestation Trends for {county}', fontsize=16)
+    
+    # Left subplot: Value over Years
+    sns.lineplot(x='Year', y='VALUE', data=county_data, marker='o', ax=axes[0])
+    axes[0].set_title('Value over Years')
+    axes[0].set_xlabel('Year')
+    axes[0].set_ylabel('Value')
+    axes[0].grid()
+    
+    # Middle subplot: Species Trends
     species_trends_county = county_data.groupby(['Year', 'Species'])['VALUE'].sum().reset_index()
-    plt.figure(figsize=(20, 12))
-    sns.lineplot(x='Year', y='VALUE', hue='Species', data=species_trends_county, marker='o')
-    plt.title(f'Species Trends over Years for {county}')
-    plt.xlabel('Year')
-    plt.ylabel('Value')
-    plt.legend(title='Species', bbox_to_anchor=(1.05, 1), loc='upper left')
-    plt.grid()
-    plt.tight_layout()
-    plt.show()
-    # Save the plot
-    species_trends_county_path = os.path.join(outputs_dir, f'species_trends_{county.replace(" ", "_").lower()}.png')
-    plt.savefig(species_trends_county_path)
-    # Further analysis for forest owner trends in the county
+    sns.lineplot(x='Year', y='VALUE', hue='Species', data=species_trends_county, marker='o', ax=axes[1])
+    axes[1].set_title('Species Trends')
+    axes[1].set_xlabel('Year')
+    axes[1].set_ylabel('Value')
+    axes[1].legend(title='Species', bbox_to_anchor=(1.05, 1), loc='upper left')
+    axes[1].grid()
+    
+    # Right subplot: Forest Owner Trends
     forest_owner_trends_county = county_data.groupby(['Year', 'Forest Owner'])['VALUE'].sum().reset_index()
-    plt.figure(figsize=(20, 12))
-    sns.lineplot(x='Year', y='VALUE', hue='Forest Owner', data=forest_owner_trends_county, marker='o')
-    plt.title(f'Forest Owner Trends over Years for {county}')
-    plt.xlabel('Year')
-    plt.ylabel('Value')
-    plt.legend(title='Forest Owner', bbox_to_anchor=(1.05, 1), loc='upper left')
-    plt.grid()
+    sns.lineplot(x='Year', y='VALUE', hue='Forest Owner', data=forest_owner_trends_county, marker='o', ax=axes[2])
+    axes[2].set_title('Forest Owner Trends')
+    axes[2].set_xlabel('Year')
+    axes[2].set_ylabel('Value')
+    axes[2].legend(title='Forest Owner', bbox_to_anchor=(1.05, 1), loc='upper left')
+    axes[2].grid()
+    
     plt.tight_layout()
     plt.show()
-    # Save the plot
-    forest_owner_trends_county_path = os.path.join(outputs_dir, f'forest_owner_trends_{county.replace(" ", "_").lower()}.png')
-    plt.savefig(forest_owner_trends_county_path)
+    # Save the combined plot for the county
+    combined_county_path = os.path.join(outputs_dir, f'combined_{county.replace(" ", "_").lower()}.png')
+    plt.savefig(combined_county_path)
+    plt.close() # Got errors about memory use, so best to close the plots after saving.
 
 # Plot mean VALUE over years for all counties (excluding Ireland)
 counties_data = data[data['County'] != 'Ireland']
