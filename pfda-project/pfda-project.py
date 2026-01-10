@@ -193,8 +193,6 @@ plt.show()
 species_trends_path = os.path.join(outputs_dir, 'species_trends_ireland.png')
 plt.savefig(species_trends_path)    
 
-# I wanted to further analyse the data using regression models, but I think the data is not sufficient for that purpose.
-# So I decided to look at correlations between numerical variables instead.
 # I wanted to look to see if there were any correlations between the species planted and the Forest owner.
 correlation_data = data[['Species', 'Forest Owner', 'VALUE']]#
 correlation_data = correlation_data.dropna()
