@@ -149,6 +149,19 @@ plt.show()
 hist_path = os.path.join(outputs_dir, 'value_distribution.png')
 plt.savefig(hist_path)
 
+#I wanted to plot a boxplot for all counties to see the spread of values. I excluded Ireland as a whole for this analysis.
+# I also colour coded the years to see if there were any trends over time.
+plt.figure(figsize=(15, 8))
+sns.boxplot(x='County', y='VALUE', data=data[data['County'] != 'Ireland'], palette='Set3')
+plt.title('Boxplot of Values by County')
+plt.xlabel('County')
+plt.ylabel('Value (Hectares Afforested)')
+plt.xticks(rotation=45) 
+plt.tight_layout()
+county_boxplot_path = os.path.join(outputs_dir, 'county_value_boxplot.png')
+plt.savefig(county_boxplot_path)
+plt.show()
+
 # Visualise the Value over the years for Ireland as a whole
 ireland_data = data[data['County'] == 'Ireland']
 plt.figure(figsize=(12, 6))
@@ -354,6 +367,48 @@ plt.show()
 # Save the plot
 species_trends_ireland_path = os.path.join(outputs_dir, 'species_trends_ireland.png')
 plt.savefig(species_trends_ireland_path)
+
+# Combined subplots for top 5 counties: value over years, species trends, and forest owner trends
+fig, axes = plt.subplots(5, 3, figsize=(25, 25))
+fig.suptitle('Afforestation Trends for Top 5 Counties', fontsize=20)
+
+for i, county in enumerate(top_5_counties):
+    county_data = data[data['County'] == county]
+    
+    # Left subplot: Value over Years
+    ax1 = axes[i, 0]
+    sns.lineplot(x='Year', y='VALUE', data=county_data, marker='o', ax=ax1)
+    ax1.set_title(f'Value over Years for {county}')
+    ax1.set_xlabel('Year')
+    ax1.set_ylabel('Value')
+    ax1.grid()
+    
+    # Middle subplot: Species Trends
+    ax2 = axes[i, 1]
+    species_trends_county = county_data.groupby(['Year', 'Species'])['VALUE'].sum().reset_index()
+    sns.lineplot(x='Year', y='VALUE', hue='Species', data=species_trends_county, marker='o', ax=ax2)
+    ax2.set_title(f'Species Trends over Years for {county}')
+    ax2.set_xlabel('Year')
+    ax2.set_ylabel('Value')
+    ax2.legend(title='Species', bbox_to_anchor=(1.05, 1), loc='upper left')
+    ax2.grid()
+    
+    # Right subplot: Forest Owner Trends
+    ax3 = axes[i, 2]
+    forest_owner_trends_county = county_data.groupby(['Year', 'Forest Owner'])['VALUE'].sum().reset_index()
+    sns.lineplot(x='Year', y='VALUE', hue='Forest Owner', data=forest_owner_trends_county, marker='o', ax=ax3)
+    ax3.set_title(f'Forest Owner Trends over Years for {county}')
+    ax3.set_xlabel('Year')
+    ax3.set_ylabel('Value')
+    ax3.legend(title='Forest Owner', bbox_to_anchor=(1.05, 1), loc='upper left')
+    ax3.grid()
+
+plt.tight_layout()
+plt.show()
+# Save the combined plot
+combined_plot_path = os.path.join(outputs_dir, 'combined_trends_top5_counties.png')
+plt.savefig(combined_plot_path)
+plt.close('all')  # I kept getting alerts for memory use so I added this as it tells py to close all figures to free memory
 
 # Now that I've done some analysis, I want to further explore using a linear regression model and to see if I can predict afforestation values based on year, species, forest owner, and county.
 # Now to prepare the data for modeling.
