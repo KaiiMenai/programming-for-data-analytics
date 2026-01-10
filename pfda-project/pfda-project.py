@@ -414,9 +414,9 @@ plt.close('all')  # I kept getting alerts for memory use so I added this as it t
 # Now to prepare the data for modeling.
 model_data = data.copy()
 # Encode categorical variables
-model_data = pd.get_dummies(model_data, columns=['Species', 'Forest Owner', 'County'], drop_first=True)
+model_data = pd.get_dummies(model_data, columns=['Species', 'Forest Owner', 'County'])  # Include all dummies
 # Define features and target variable
-X = model_data.drop(columns=['VALUE', 'Year'])  # Exclude 'Year'
+X = model_data.drop(columns=['VALUE', 'Year', 'Statistic Label', 'UNIT'])  # Exclude 'Year', and non-numeric columns
 y = model_data['VALUE']
 # Split the data into training and testing sets
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
@@ -433,32 +433,33 @@ print(f"R-squared: {r2}")
 # Now to see if the model can predict afforestation values for a specific year, species, forest owner, and county. Given that Ireland is aiming for 8,000 hectares of new afforestation annually by 2030, I will use this as a test case.
 
 # Get unique species and forest owners from the data
-unique_species = data['Species'].unique()
-unique_forest_owners = data['Forest Owner'].unique()
+unique_species = sorted(data['Species'].unique())
+unique_forest_owners = sorted(data['Forest Owner'].unique())
 
 print("\nUnique Species in dataset:")
 print(unique_species)
 print("\nUnique Forest Owners in dataset:")
 print(unique_forest_owners)
 
-# Build test case dynamically from the first species and first forest owner
-test_case = {'Year': 2030}
+# Build test case for total afforestation in Ireland for 2030
+test_case = {}
 
-# Add species columns (set first species to 1, others to 0)
+# Set species to 'Total Afforestation'
 for species in unique_species:
     col_name = f'Species_{species}'
-    test_case[col_name] = 1 if species == unique_species[0] else 0
+    test_case[col_name] = 1 if species == 'Total Afforestation' else 0
 
-# Add forest owner columns (set first forest owner to 1, others to 0)
+# Set forest owner to 'Total Afforestation'
 for owner in unique_forest_owners:
     col_name = f'Forest Owner_{owner}'
-    test_case[col_name] = 1 if owner == unique_forest_owners[0] else 0
+    test_case[col_name] = 1 if owner == 'Total Afforestation' else 0
 
-# Add county columns (all set to 0 to use the base category)
-unique_counties = data[data['County'] != 'Ireland']['County'].unique()
+# Set county to 'Ireland'
+unique_counties = sorted(data[data['County'] != 'Ireland']['County'].unique())
 for county in unique_counties:
     col_name = f'County_{county}'
     test_case[col_name] = 0
+test_case['County_Ireland'] = 1  # Ireland is not in unique_counties, so add manually
 
 # Ensure all model features are in the test case with default values of 0
 for feature in X.columns:
@@ -467,8 +468,8 @@ for feature in X.columns:
 
 test_case_df = pd.DataFrame([test_case])
 predicted_value = model.predict(test_case_df)
-print(f"\nPredicted afforestation value for 2030 with {unique_species[0]} by {unique_forest_owners[0]}: {predicted_value[0]:.2f} hectares")
+print(f"\nPredicted total afforestation value for Ireland in 2030: {predicted_value[0]:.2f} hectares")
 if predicted_value[0] >= 8000:
-    print("The predicted value meets or exceeds the target of 8000 hectares.")
+    print("The predicted value meets or exceeds the target of 8000 hectares per year.")
 else:
-    print("The predicted value is below the target of 8000 hectares.")
+    print("The predicted value is below the target of 8000 hectares per year.")
