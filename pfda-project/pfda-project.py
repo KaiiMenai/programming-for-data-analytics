@@ -35,7 +35,10 @@ response = requests.get(url)
 json_data = response.json()
 csv_string = json_data['result']
 data = pd.read_csv(io.StringIO(csv_string))
-script_dir = os.path.dirname(os.path.abspath(__file__))
+try:
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+except NameError:
+    script_dir = os.getcwd()  # For Jupyter notebooks
 csv_path = os.path.join(script_dir, 'pfda_data.csv')
 data.to_csv(csv_path, index=False)
 # note if saved successfully, a file named 'pfda_data.csv' will appear in the working directory
